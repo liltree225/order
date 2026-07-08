@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: demo
+      sqlFile:
+        path: liquibase/sql/init.sql
+        relativeToChangelogFile: false
