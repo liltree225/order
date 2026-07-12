@@ -22,7 +22,7 @@ public class OrderDto {
     private Long id;
     private Long userId;
     private String userEmail;
-    private BigDecimal totalAmount;
+    private Long totalAmount;
     private OrderStatus status;
     private String shippingAddress;
     private List<OrderItemDto> items = new ArrayList<>();

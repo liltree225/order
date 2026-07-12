@@ -20,14 +20,14 @@ public class OrderItem {
     private Long productId;
     private String productName;
     private Integer quantity;
-    private BigDecimal unitPrice;
-    private BigDecimal totalPrice;
+    private Long unitPrice;
+    private Long totalPrice;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Long orderId;
 
 
-    public void setUnitPrice(BigDecimal unitPrice) {
+    public void setUnitPrice(Long unitPrice) {
         this.unitPrice = unitPrice;
         calculateTotalPrice();
     }

@@ -25,7 +25,7 @@ public class Order {
     private Long id;
     private Long userId;
     private String userEmail;
-    private BigDecimal totalAmount;
+    private Long totalAmount;
     private OrderStatus status;
     private String shippingAddress;
     @OneToMany(mappedBy = "orders")
@@ -35,5 +35,12 @@ public class Order {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    public void addItem(OrderItem item) {
+        if (this.items == null) {
+            this.items = new ArrayList<>();
+        }
+        this.items.add(item);
 
+        item.setOrderId(this.getId());
+    }
 }

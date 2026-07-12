@@ -22,5 +22,5 @@ public class CreateOrderRequestDto {
     private String shippingAddress;
     @NotEmpty
     @Valid
-    private List<OrderItemDto> items;
+    private List<CreateOrderItemRequestDto> items;
 }

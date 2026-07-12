@@ -1,6 +1,7 @@
 package org.example.mapper;
 
 import lombok.RequiredArgsConstructor;
+import org.example.domain.OrderItem;
 import org.example.dto.OrderItemDto;
 import org.springframework.stereotype.Component;
 
@@ -8,9 +9,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderItemMapper {
 
-    public OrderItemDto toDto(){
+    public OrderItemDto toDto(OrderItem orderItem){
         return new OrderItemDto(
-
+                orderItem.getId(),
+                orderItem.getProductId(),
+                orderItem.getProductName(),
+                orderItem.getQuantity(),
+                orderItem.getUnitPrice(),
+                orderItem.getTotalPrice(),
+                orderItem.getOrderId()
         );
     }
 }

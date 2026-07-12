@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 public class PaymentDto {
 
     private Long id;
-    private Long paymentId;
     private Long orderId;
     private BigDecimal amount;
     private String paymentMethod;

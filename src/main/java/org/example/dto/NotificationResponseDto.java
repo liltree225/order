@@ -4,13 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderListResponseDto {
-    private Long userId;
-    private List<OrderResponseDto> orders;
-    private Integer totalCount;
+public class NotificationResponseDto {
+
+    private Boolean sent;
 }
