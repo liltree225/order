@@ -2,13 +2,13 @@ package org.example.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.dto.CreateOrderRequestDto;
-import org.example.dto.OrderListResponseDto;
-import org.example.dto.OrderResponseDto;
+import org.example.dto.*;
 import org.example.service.OrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/v1/order")
@@ -37,7 +37,21 @@ public class OrderController {
         return orderService.getOrdersByUserId(userId);
     }
 
-    @PatchMapping()
+    @PatchMapping("/{id}/status")
+    public OrderResponseDto updateStatus(@PathVariable Long id, @Valid @RequestBody UpdateStatusRequestDto requestDto){
+        return orderService.updateStatus(id,requestDto);
+    }
+
+    @PostMapping("/{id}/pay")
+    public PaymentResponseDto payOrder (@PathVariable Long id, @Valid @RequestBody PaymentRequestDto requestDto){
+        return orderService.payOrder(id, requestDto);
+    }
+
+    @DeleteMapping("/{id}")
+    public OrderResponseDto deleteOrder(@PathVariable Long id, @RequestBody(required = false) Optional <CancelOrderRequestDto> requestDto){
+        return orderService.deleteOrder(id, requestDto);
+    }
+
 
 
 }

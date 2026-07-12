@@ -21,7 +21,7 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Long orderId;
-    private BigDecimal amount;
+    private Long amount;
     private String paymentMethod;
     private PaymentStatus status;
     private String transactionId;

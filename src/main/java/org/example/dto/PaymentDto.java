@@ -16,7 +16,7 @@ public class PaymentDto {
 
     private Long id;
     private Long orderId;
-    private BigDecimal amount;
+    private Long amount;
     private String paymentMethod;
     private PaymentStatus status;
     private String transactionId;
