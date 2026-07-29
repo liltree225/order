@@ -17,7 +17,7 @@ public class OrderItemMapper {
                 orderItem.getQuantity(),
                 orderItem.getUnitPrice(),
                 orderItem.getTotalPrice(),
-                orderItem.getOrderId()
+                orderItem.getOrder().getId()
         );
     }
 }

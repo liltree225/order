@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = "notification-service", url = "http://localhost:5124")
 
 public interface NotificationFeignClient {
-    @GetMapping("api/v1/notification/hello")
+    @GetMapping("api/v1/notifications/hello")
     void hello();
 
-    @PostMapping("api/v1/notification/sent")
+    @PostMapping("api/v1/notifications/send")
     NotificationResponseDto sendNotification(@RequestBody NotificationSendRequestDto request);
 }

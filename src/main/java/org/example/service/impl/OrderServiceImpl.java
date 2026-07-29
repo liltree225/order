@@ -49,6 +49,8 @@ public class OrderServiceImpl implements OrderService {
         notificationSendRequest.setUserId(savedOrder.getUserId());
         notificationSendRequest.setUserEmail(savedOrder.getUserEmail());
         notificationSendRequest.setEventType("ORDER_CREATED");
+        notificationSendRequest.setSubject("Создание заказа №" + savedOrder.getId());
+        notificationSendRequest.setMessage("Ваш заказ на сумму " + savedOrder.getTotalAmount() + " успешно создан.");
         notificationSendRequest.setTotalAmount(savedOrder.getTotalAmount());
         notificationFeignClient.sendNotification(notificationSendRequest);
         return orderMapper.toDto(savedOrder);
@@ -71,23 +73,24 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public OrderResponseDto updateStatus(Long orderId, UpdateStatusRequestDto requestDto) {
         Order order = orderDao.findById(orderId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + orderId + " не найден"));
         NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
-        if (order.getStatus().name().equals("CREATED") && requestDto.getNewStatus().name().equals("CANCELLED")) {
-            order.setStatus(OrderStatus.CANCELLED);
+        if (order.getStatus().name().equals("ORDER_CREATED") && requestDto.getNewStatus().name().equals("ORDER_CANCELLED")) {
+            order.setStatus(OrderStatus.ORDER_CANCELLED);
             notificationSendRequest.setEventType("ORDER_CANCELLED");
-        } else if (order.getStatus().name().equals("CREATED") && requestDto.getNewStatus().name().equals("PAID")) {
-            order.setStatus(OrderStatus.PAID);
+        } else if (order.getStatus().name().equals("ORDER_CREATED") && requestDto.getNewStatus().name().equals("ORDER_PAID")) {
+            order.setStatus(OrderStatus.ORDER_PAID);
             notificationSendRequest.setEventType("ORDER_PAID");
-        } else if (order.getStatus().name().equals("PAID") && requestDto.getNewStatus().name().equals("SHIPPED")) {
-            order.setStatus(OrderStatus.SHIPPED);
+        } else if (order.getStatus().name().equals("ORDER_PAID") && requestDto.getNewStatus().name().equals("ORDER_SHIPPED")) {
+            order.setStatus(OrderStatus.ORDER_SHIPPED);
             notificationSendRequest.setEventType("ORDER_SHIPPED");
-        } else if (order.getStatus().name().equals("PAID") && requestDto.getNewStatus().name().equals("CANCELLED")) {
-            order.setStatus(OrderStatus.CANCELLED);
+        } else if (order.getStatus().name().equals("ORDER_PAID") && requestDto.getNewStatus().name().equals("ORDER_CANCELLED")) {
+            order.setStatus(OrderStatus.ORDER_CANCELLED);
             notificationSendRequest.setEventType("ORDER_CANCELLED");
-        } else if (order.getStatus().name().equals("SHIPPED") && requestDto.getNewStatus().name().equals("DELIVERED")) {
-            order.setStatus(OrderStatus.DELIVERED);
+        } else if (order.getStatus().name().equals("ORDER_SHIPPED") && requestDto.getNewStatus().name().equals("ORDER_DELIVERED")) {
+            order.setStatus(OrderStatus.ORDER_DELIVERED);
             notificationSendRequest.setEventType("ORDER_DELIVERED");
         } else {
             throw new ResponseStatusException(
@@ -100,8 +103,12 @@ public class OrderServiceImpl implements OrderService {
         notificationSendRequest.setUserEmail(order.getUserEmail());
         notificationSendRequest.setTotalAmount(order.getTotalAmount());
         orderDao.save(order);
-        notificationFeignClient.sendNotification(notificationSendRequest);
+        try {
+            notificationFeignClient.sendNotification(notificationSendRequest);
+        } catch (Exception e) {
 
+            System.err.println("Ошибка при отправке уведомления: " + e.getMessage());
+        }
 
 
         return orderMapper.toDto(order);
@@ -118,13 +125,13 @@ public class OrderServiceImpl implements OrderService {
             );
         }
         Payment payment = new Payment();
-        payment.setOrderId(id);
+        payment.setOrder(order);
         payment.setAmount(order.getTotalAmount());
         payment.setPaymentMethod(requestDto.getPaymentMethod().name());
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setPaidAt(LocalDateTime.now());
 
-        order.setStatus(OrderStatus.PAID);
+        order.setStatus(OrderStatus.ORDER_PAID);
         orderDao.save(order);
         notificationSendRequest.setOrderId(order.getId());
         notificationSendRequest.setUserId(order.getUserId());
@@ -156,7 +163,7 @@ public class OrderServiceImpl implements OrderService {
             paymentDao.save(payment);
         }
 
-        order.setStatus(OrderStatus.CANCELLED);
+        order.setStatus(OrderStatus.ORDER_CANCELLED);
         orderDao.save(order);
 
         notificationSendRequest.setOrderId(order.getId());

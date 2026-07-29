@@ -12,7 +12,7 @@ public class PaymentMapper {
     public PaymentResponseDto toDto(Payment payment){
         return new PaymentResponseDto(
                 payment.getId(),
-                payment.getOrderId(),
+                payment.getOrder().getId(),
                 payment.getAmount(),
                 payment.getPaymentMethod(),
                 payment.getStatus(),

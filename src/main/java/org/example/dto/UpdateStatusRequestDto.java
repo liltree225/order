@@ -1,7 +1,6 @@
 package org.example.dto;
 
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,7 +18,7 @@ public class UpdateStatusRequestDto {
 
     @AssertTrue
     public boolean isReasonValid(){
-        if (this.newStatus == OrderStatus.CANCELLED){
+        if (this.newStatus == OrderStatus.ORDER_CANCELLED){
             return this.reason != null && !this.reason.isBlank();
         }
         return true;

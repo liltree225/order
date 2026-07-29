@@ -28,12 +28,12 @@ public class Order {
     private Long totalAmount;
     private OrderStatus status;
     private String shippingAddress;
-    @OneToMany(mappedBy = "orders")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
     @CreatedDate
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
     @LastModifiedDate
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     public void addItem(OrderItem item) {
         if (this.items == null) {
@@ -41,6 +41,6 @@ public class Order {
         }
         this.items.add(item);
 
-        item.setOrderId(this.getId());
+        item.setOrder(this);
     }
 }

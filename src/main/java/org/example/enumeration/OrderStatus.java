@@ -2,6 +2,6 @@ package org.example.enumeration;
 
 public enum OrderStatus {
 
-    CREATED,PAID,SHIPPED,DELIVERED,CANCELLED
+    ORDER_CREATED, ORDER_PAID, ORDER_SHIPPED, ORDER_DELIVERED, ORDER_CANCELLED
 
 }

@@ -14,4 +14,6 @@ public class CreateOrderItemRequestDto {
     private Long productId;
     @Positive
     private Integer quantity;
+    @Positive
+    private Integer price;
 }

@@ -5,12 +5,10 @@ import org.example.domain.Order;
 import org.example.domain.OrderItem;
 import org.example.dto.CreateOrderItemRequestDto;
 import org.example.dto.CreateOrderRequestDto;
-import org.example.dto.OrderDto;
 import org.example.dto.OrderResponseDto;
 import org.example.enumeration.OrderStatus;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 @RequiredArgsConstructor
 @Component
 public class OrderMapper {
@@ -43,7 +41,7 @@ public class OrderMapper {
         order.setUserId(dto.getUserId());
         order.setUserEmail(dto.getUserEmail());
         order.setShippingAddress(dto.getShippingAddress());
-        order.setStatus(OrderStatus.CREATED);
+        order.setStatus(OrderStatus.ORDER_CREATED);
 
         Long totalAmountOrder = 0L;
 
@@ -55,7 +53,8 @@ public class OrderMapper {
                item.setProductId(itemDto.getProductId());
                item.setQuantity(itemDto.getQuantity());
                item.setProductName("Товар #" + itemDto.getProductId());
-               item.setUnitPrice(10000L);
+               item.setUnitPrice(itemDto.getPrice().longValue());
+               item.setTotalPrice(item.getQuantity() * item.getUnitPrice());
                order.addItem(item);
                totalAmountOrder = totalAmountOrder + item.getTotalPrice();
            }

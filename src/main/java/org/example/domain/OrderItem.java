@@ -24,7 +24,7 @@ public class OrderItem {
     private Long totalPrice;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    private Long orderId;
+    private Order order;
 
 
     public void setUnitPrice(Long unitPrice) {
@@ -34,7 +34,7 @@ public class OrderItem {
 
     private void calculateTotalPrice(){
         if (this.quantity != null && this.unitPrice != null){
-            this.totalPrice = this.unitPrice.multiply(BigDecimal.valueOf(this.quantity));
+            this.totalPrice = this.unitPrice * this.quantity;
         }
     }
 }
