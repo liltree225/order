@@ -26,6 +26,7 @@ public class Order {
     private Long userId;
     private String userEmail;
     private Long totalAmount;
+    @Enumerated(EnumType.STRING)
     private OrderStatus status;
     private String shippingAddress;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

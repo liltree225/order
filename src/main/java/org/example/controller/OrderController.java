@@ -48,7 +48,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public OrderResponseDto deleteOrder(@PathVariable Long id, @RequestBody(required = false) Optional <CancelOrderRequestDto> requestDto){
+    public OrderResponseDto deleteOrder(@PathVariable Long id, @RequestBody(required = false)  CancelOrderRequestDto requestDto){
         return orderService.deleteOrder(id, requestDto);
     }
 

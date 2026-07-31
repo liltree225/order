@@ -23,6 +23,7 @@ public class Payment {
     private Order order;
     private Long amount;
     private String paymentMethod;
+    @Enumerated(EnumType.STRING)
     private PaymentStatus status;
     private String transactionId;
     private LocalDateTime paidAt;

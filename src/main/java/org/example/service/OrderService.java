@@ -12,5 +12,5 @@ public interface OrderService {
     public OrderListResponseDto getOrdersByUserId(Long userId);
     public OrderResponseDto updateStatus(Long orderId, UpdateStatusRequestDto requestDto);
     public PaymentResponseDto payOrder(Long id, PaymentRequestDto requestDto);
-    public OrderResponseDto deleteOrder(Long id, Optional<CancelOrderRequestDto> requestDto);
+    public OrderResponseDto deleteOrder(Long id, CancelOrderRequestDto requestDto);
 }

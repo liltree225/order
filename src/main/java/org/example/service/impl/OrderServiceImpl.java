@@ -1,5 +1,6 @@
 package org.example.service.impl;
 
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.example.client.NotificationFeignClient;
 import org.example.domain.Order;
@@ -118,7 +119,7 @@ public class OrderServiceImpl implements OrderService {
     public PaymentResponseDto payOrder(Long id, PaymentRequestDto requestDto) {
         Order order = orderDao.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + id + " не найден"));
         NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
-        if (!order.getStatus().name().equals("CREATED")){
+        if (!order.getStatus().name().equals("ORDER_CREATED")){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Недопустимый переход статуса из " + order.getStatus()
@@ -146,12 +147,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponseDto deleteOrder(Long id, Optional<CancelOrderRequestDto> requestDto) {
+    public OrderResponseDto deleteOrder(Long id, @Nullable CancelOrderRequestDto requestDto) {
         Order order = orderDao.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + id + " не найден"));
         Payment payment = paymentDao.findByOrderId(id);
         NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
 
-        if (!order.getStatus().name().equals("CREATED") && !order.getStatus().name().equals("PAID") ){
+        if (!order.getStatus().name().equals("ORDER_CREATED") && !order.getStatus().name().equals("ORDER_PAID") ){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Недопустимый переход статуса из " + order.getStatus()
@@ -171,7 +172,9 @@ public class OrderServiceImpl implements OrderService {
         notificationSendRequest.setUserEmail(order.getUserEmail());
         notificationSendRequest.setEventType("ORDER_CANCELLED");
         notificationSendRequest.setTotalAmount(order.getTotalAmount());
-        requestDto.ifPresent(dto -> notificationSendRequest.setReason(dto.getReason()));
+        if(requestDto != null){
+            notificationSendRequest.setReason(requestDto.getReason());
+        }
         notificationFeignClient.sendNotification(notificationSendRequest);
 
         return orderMapper.toDto(order);
