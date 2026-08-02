@@ -21,6 +21,9 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
+    // TODO: несостыковка — amount имеет тип Long, но в init.sql amount DECIMAL(12,2).
+    //  При сохранении дробного значения произойдёт потеря точности или ошибка.
+    //  Нужно использовать BigDecimal.
     private Long amount;
     private String paymentMethod;
     @Enumerated(EnumType.STRING)

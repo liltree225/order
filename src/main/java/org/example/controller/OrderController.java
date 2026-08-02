@@ -7,6 +7,9 @@ import org.example.service.OrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
+/*
+ * todo убрать
+ */
 
 import java.util.Optional;
 
@@ -21,6 +24,10 @@ public class OrderController {
     void hello(){
         orderService.hello();
     }
+    /*
+      * todo убрать метод hello
+     */
+
 
     @PostMapping
     public OrderResponseDto createOrder(@Valid @RequestBody CreateOrderRequestDto createOrderRequestDto){

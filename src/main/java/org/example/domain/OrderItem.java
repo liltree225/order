@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// TODO: несостыковка — импорты java.math.BigDecimal и java.time.LocalDateTime не используются. Убрать.
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

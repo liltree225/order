@@ -12,5 +12,8 @@ public interface OrderService {
     public OrderListResponseDto getOrdersByUserId(Long userId);
     public OrderResponseDto updateStatus(Long orderId, UpdateStatusRequestDto requestDto);
     public PaymentResponseDto payOrder(Long id, PaymentRequestDto requestDto);
+    // TODO: несостыковка — в интерфейсе параметр CancelOrderRequestDto без @Nullable,
+    //  а в имплементации — @Nullable. В контроллере @RequestBody(required = false).
+    //  Нужно привести к единому контракту.
     public OrderResponseDto deleteOrder(Long id, CancelOrderRequestDto requestDto);
 }
