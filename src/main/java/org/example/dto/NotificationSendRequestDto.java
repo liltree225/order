@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,7 +17,7 @@ public class NotificationSendRequestDto {
     private String userEmail;
     @JsonProperty("type")
     private String eventType;
-    private Long totalAmount;
+    private BigDecimal totalAmount;
     private String subject;
     private String message;
     private String trackingNumber;

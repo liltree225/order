@@ -5,9 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// TODO: несостыковка — импорты java.math.BigDecimal и java.time.LocalDateTime не используются. Убрать.
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+
+
+
 
 @Entity
 @Table(name = "order_items")
@@ -21,21 +22,22 @@ public class OrderItem {
     private Long productId;
     private String productName;
     private Integer quantity;
-    private Long unitPrice;
-    private Long totalPrice;
+    private BigDecimal unitPrice;
+    private BigDecimal totalPrice;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
 
-    public void setUnitPrice(Long unitPrice) {
+    public void setUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
         calculateTotalPrice();
     }
 
-    private void calculateTotalPrice(){
-        if (this.quantity != null && this.unitPrice != null){
-            this.totalPrice = this.unitPrice * this.quantity;
+    private void calculateTotalPrice() {
+        if (this.quantity != null && this.unitPrice != null) {
+            BigDecimal qty = BigDecimal.valueOf(this.quantity);
+            this.totalPrice = this.unitPrice.multiply(qty);
         }
     }
 }

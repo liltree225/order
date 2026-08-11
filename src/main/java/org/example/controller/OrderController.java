@@ -7,9 +7,7 @@ import org.example.service.OrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-/*
- * todo убрать
- */
+
 
 import java.util.Optional;
 
@@ -20,13 +18,7 @@ import java.util.Optional;
 public class OrderController {
     private final Logger logger = LoggerFactory.getLogger(OrderController.class);
     private final OrderService orderService;
-    @GetMapping("/hello")
-    void hello(){
-        orderService.hello();
-    }
-    /*
-      * todo убрать метод hello
-     */
+
 
 
     @PostMapping

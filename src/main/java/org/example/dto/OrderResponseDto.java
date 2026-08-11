@@ -18,7 +18,7 @@ public class OrderResponseDto {
     private Long id;
     private Long userId;
     private String userEmail;
-    private Long totalAmount;
+    private BigDecimal totalAmount;
     private OrderStatus status;
     private String shippingAddress;
     private List<OrderItemDto> items = new ArrayList<>();

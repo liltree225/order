@@ -9,6 +9,8 @@ import org.example.dto.OrderResponseDto;
 import org.example.enumeration.OrderStatus;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @RequiredArgsConstructor
 @Component
 public class OrderMapper {
@@ -43,33 +45,34 @@ public class OrderMapper {
         order.setShippingAddress(dto.getShippingAddress());
         order.setStatus(OrderStatus.ORDER_CREATED);
 
-        // TODO: несостыковка — totalAmountOrder имеет тип Long, а itemDto.getPrice() может быть дробным
-        //  (в БД DECIMAL(10,2)). При .longValue() дробная часть отбрасывается — потеря точности.
-        //  Также item.getUnitPrice() * item.getQuantity() может переполнить Long при больших значениях.
-        Long totalAmountOrder = 0L;
+
+
+        BigDecimal totalAmountOrder = BigDecimal.ZERO;
+
+        if(dto.getItems() != null){
+            for (CreateOrderItemRequestDto itemDto : dto.getItems()){
+                OrderItem item = new OrderItem();
+                item.setProductId(itemDto.getProductId());
+                item.setQuantity(itemDto.getQuantity());
+
+
+                item.setProductName("Товар #" + itemDto.getProductId());
+
+
+                item.setUnitPrice(itemDto.getPrice());
 
 
 
-       if(dto.getItems() != null){
-           for (CreateOrderItemRequestDto itemDto : dto.getItems()){
-               OrderItem item = new OrderItem();
-               item.setProductId(itemDto.getProductId());
-               item.setQuantity(itemDto.getQuantity());
-               // TODO: несостыковка — productName захардкожен как "Товар #" + productId.
-               //  В CreateOrderItemRequestDto нет поля productName (есть todo добавить),
-               //  а в БД product_name NOT NULL. Нужно передавать реальное имя товара от клиента
-               item.setProductName("Товар #" + itemDto.getProductId());
-               item.setUnitPrice(itemDto.getPrice().longValue());
-               // TODO: несостыковка — setTotalPrice дублирует логику OrderItem.calculateTotalPrice(),
-               //  который уже вызывается внутри setUnitPrice(). Двойной расчёт. Убрать явный setTotalPrice.
-               item.setTotalPrice(item.getQuantity() * item.getUnitPrice());
-               order.addItem(item);
-               totalAmountOrder = totalAmountOrder + item.getTotalPrice();
-           }
-       }
+                order.addItem(item);
+
+
+                if (item.getTotalPrice() != null) {
+                    totalAmountOrder = totalAmountOrder.add(item.getTotalPrice());
+                }
+            }
+        }
 
         order.setTotalAmount(totalAmountOrder);
-
 
         return order;
     }

@@ -31,9 +31,7 @@ CREATE TABLE IF NOT EXISTS payments (
     order_id BIGINT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
     amount DECIMAL(12, 2) NOT NULL,
     payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('CARD', 'PAYPAL', 'CRYPTO')),
-    -- TODO: несостыковка — в CHECK указан статус 'PENDING', но в enum PaymentStatus
-    --  нет значения PENDING (только SUCCESS, FAILED, REFUNDED). Либо добавить PENDING в enum,
-    --  либо убрать из CHECK. Сейчас сохранение со статусом PENDING невозможно через Java-код.
+
     status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED')),
     transaction_id VARCHAR(255),
     paid_at TIMESTAMP

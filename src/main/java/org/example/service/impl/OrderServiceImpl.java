@@ -33,45 +33,52 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDao orderDao;
     private final PaymentDao paymentDao;
 
-    // TODO: рефакторинг — вынести отправку уведомления в приватный метод.
-    //  Создание NotificationSendRequestDto и вызов notificationFeignClient.sendNotification
-    //  дублируется в createOrder, updateStatus, payOrder, deleteOrder.
-    //  Например: private void sendNotification(Order order, String eventType, String subject, String message)
-    // TODO: рефакторинг — вынести загрузку заказа по ID в приватный метод.
-    //  orderDao.findById(id).orElseThrow(...404...) дублируется в getOrderById, updateStatus, payOrder, deleteOrder.
-    //  Например: private Order getOrderOrThrow(Long id)
+    private Payment createPayment(Order order, PaymentRequestDto requestDto) {
+        Payment payment = new Payment();
+        payment.setOrder(order);
+        payment.setAmount(order.getTotalAmount());
+        payment.setPaymentMethod(requestDto.getPaymentMethod().name());
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setPaidAt(LocalDateTime.now());
+        return payment;
+    }
 
-    @Override
-    public void hello() {
-        notificationFeignClient.hello();
+
+    private Order getOrderOrThrow(Long id) {
+        return orderDao.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + id + " не найден"));
+    }
+
+    private void sendNotification(Order savedOrder, String eventType, String subject, String message, @Nullable String reason) {
+        NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
+        notificationSendRequest.setOrderId(savedOrder.getId());
+        notificationSendRequest.setUserId(savedOrder.getUserId());
+        notificationSendRequest.setUserEmail(savedOrder.getUserEmail());
+        notificationSendRequest.setEventType(eventType);
+        notificationSendRequest.setSubject(subject);
+        notificationSendRequest.setMessage(message);
+        notificationSendRequest.setTotalAmount(savedOrder.getTotalAmount());
+        notificationSendRequest.setReason(reason);
+        try {
+            notificationFeignClient.sendNotification(notificationSendRequest);
+        } catch (Exception e) {
+
+            System.err.println("Ошибка при отправке уведомления: " + e.getMessage());
+        }
     }
 
 
     @Override
     @Transactional
     public OrderResponseDto createOrder(CreateOrderRequestDto createOrderRequestDto) {
-
         Order order = orderMapper.toEntity(createOrderRequestDto);
         Order savedOrder = orderDao.save(order);
-        // TODO: несостыковка — нет try-catch вокруг sendNotification, в отличие от updateStatus.
-        //  Если notification-service недоступен, весь createOrder упадёт, и заказ не будет создан для клиента
-        //  (хотя в БД он уже сохранён). Нужно обернуть в try-catch или вынести отправку уведомлений
-        //  в асинхронный/outbox-механизм.
-        NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
-        notificationSendRequest.setOrderId(savedOrder.getId());
-        notificationSendRequest.setUserId(savedOrder.getUserId());
-        notificationSendRequest.setUserEmail(savedOrder.getUserEmail());
-        notificationSendRequest.setEventType("ORDER_CREATED");
-        notificationSendRequest.setSubject("Создание заказа №" + savedOrder.getId());
-        notificationSendRequest.setMessage("Ваш заказ на сумму " + savedOrder.getTotalAmount() + " успешно создан.");
-        notificationSendRequest.setTotalAmount(savedOrder.getTotalAmount());
-        notificationFeignClient.sendNotification(notificationSendRequest);
+        sendNotification(savedOrder, "ORDER_CREATED", "Создание заказа №" + savedOrder.getId(), "Ваш заказ на сумму " + savedOrder.getTotalAmount() + " успешно создан.", null);
         return orderMapper.toDto(savedOrder);
     }
 
     @Override
     public OrderResponseDto getOrderById(Long id) {
-        return orderMapper.toDto(orderDao.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + id + " не найден")));
+        return orderMapper.toDto(getOrderOrThrow(id));
     }
 
     @Override
@@ -88,129 +95,83 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponseDto updateStatus(Long orderId, UpdateStatusRequestDto requestDto) {
-        Order order = orderDao.findById(orderId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + orderId + " не найден"));
-        NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
-        // TODO: несостыковка — updateStatus разрешает переход ORDER_CREATED -> ORDER_PAID (строка ниже),
-        //  но при этом не создаётся запись Payment. Заказ в статусе ORDER_PAID остаётся без платежа,
-        //  и deleteOrder не сможет оформить возврат (paymentDao.findByOrderId вернёт null).
-        //  Нужно либо запретить переход в ORDER_PAID через updateStatus (только через payOrder),
-        //  либо создавать Payment внутри updateStatus.
+        Order order = getOrderOrThrow(orderId);
+        String eventType;
+
         if (order.getStatus().name().equals("ORDER_CREATED") && requestDto.getNewStatus().name().equals("ORDER_CANCELLED")) {
             order.setStatus(OrderStatus.ORDER_CANCELLED);
-            notificationSendRequest.setEventType("ORDER_CANCELLED");
-        } else if (order.getStatus().name().equals("ORDER_CREATED") && requestDto.getNewStatus().name().equals("ORDER_PAID")) {
-            order.setStatus(OrderStatus.ORDER_PAID);
-            notificationSendRequest.setEventType("ORDER_PAID");
+            eventType = "ORDER_CANCELLED";
         } else if (order.getStatus().name().equals("ORDER_PAID") && requestDto.getNewStatus().name().equals("ORDER_SHIPPED")) {
             order.setStatus(OrderStatus.ORDER_SHIPPED);
-            notificationSendRequest.setEventType("ORDER_SHIPPED");
+            eventType = "ORDER_SHIPPED";
         } else if (order.getStatus().name().equals("ORDER_PAID") && requestDto.getNewStatus().name().equals("ORDER_CANCELLED")) {
             order.setStatus(OrderStatus.ORDER_CANCELLED);
-            notificationSendRequest.setEventType("ORDER_CANCELLED");
+            eventType = "ORDER_CANCELLED";
         } else if (order.getStatus().name().equals("ORDER_SHIPPED") && requestDto.getNewStatus().name().equals("ORDER_DELIVERED")) {
             order.setStatus(OrderStatus.ORDER_DELIVERED);
-            notificationSendRequest.setEventType("ORDER_DELIVERED");
+            eventType = "ORDER_DELIVERED";
         } else {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Недопустимый переход статуса из " + order.getStatus() + " в " + requestDto.getNewStatus()
             );
         }
-        notificationSendRequest.setOrderId(order.getId());
-        notificationSendRequest.setUserId(order.getUserId());
-        notificationSendRequest.setUserEmail(order.getUserEmail());
-        notificationSendRequest.setTotalAmount(order.getTotalAmount());
         orderDao.save(order);
-        try {
-            notificationFeignClient.sendNotification(notificationSendRequest);
-        } catch (Exception e) {
-
-            System.err.println("Ошибка при отправке уведомления: " + e.getMessage());
-        }
+        sendNotification(order, eventType, "Новый статус заказа №" + order.getId(), "Ваш статус заказа успешно изменен", null);
 
 
         return orderMapper.toDto(order);
     }
 
-    // TODO: несостыковка — метод не аннотирован @Transactional. orderDao.save и paymentDao.save
-    //  выполняются в разных транзакциях. Если paymentDao.save упадёт, заказ уже будет ORDER_PAID без платежа.
+    @Transactional
     @Override
     public PaymentResponseDto payOrder(Long id, PaymentRequestDto requestDto) {
-        Order order = orderDao.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + id + " не найден"));
-        NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
-        if (!order.getStatus().name().equals("ORDER_CREATED")){
+        Order order = getOrderOrThrow(id);
+        if (!order.getStatus().name().equals("ORDER_CREATED")) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Недопустимый переход статуса из " + order.getStatus()
             );
         }
-        // TODO: несостыковка — нет проверки на существующий платёж. Если вызвать payOrder дважды,
-        //  вторая попытка упадёт на UNIQUE-ограничении БД (payments.order_id) с необработанным исключением.
-        //  Нужно проверять paymentDao.findByOrderId(id) != null и возвращать ошибку.
-        // TODO: рефакторинг — вынести создание платежа в приватный метод.
-        //  Например: private Payment createPayment(Order order, PaymentRequestDto requestDto)
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setAmount(order.getTotalAmount());
-        payment.setPaymentMethod(requestDto.getPaymentMethod().name());
-        payment.setStatus(PaymentStatus.SUCCESS);
-        payment.setPaidAt(LocalDateTime.now());
+        if (paymentDao.findByOrderId(id) != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Платеж уже существует"
+            );
+        }
+        Payment payment = createPayment(order, requestDto);
 
         order.setStatus(OrderStatus.ORDER_PAID);
         orderDao.save(order);
-        // TODO: несостыковка — уведомление отправляется ДО сохранения платежа (paymentDao.save ниже).
-        //  Если paymentDao.save упадёт (а @Transactional нет), клиент получит ложное уведомление об оплате.
-        //  Нужно сначала сохранить платёж, потом отправлять уведомление.
-        // TODO: несостыковка — нет try-catch вокруг sendNotification, в отличие от updateStatus.
-        //  Если notification-service недоступен, весь payOrder упадёт, и заказ останется без статуса.
-        notificationSendRequest.setOrderId(order.getId());
-        notificationSendRequest.setUserId(order.getUserId());
-        notificationSendRequest.setUserEmail(order.getUserEmail());
-        notificationSendRequest.setEventType("ORDER_PAID");
-        notificationSendRequest.setTotalAmount(order.getTotalAmount());
-        notificationFeignClient.sendNotification(notificationSendRequest);
-
         paymentDao.save(payment);
+        sendNotification(order, "ORDER_PAID", "Оплата заказа №" + order.getId(), "Ваш заказ на сумму " + order.getTotalAmount() + " успешно оплачен.", null);
 
         return paymentMapper.toDto(payment);
     }
 
-    // TODO: несостыковка — метод не аннотирован @Transactional. Изменение статуса платежа,
-    //  изменение статуса заказа и отправка уведомления выполняются без атомарности.
-    // TODO: несостыковка — нет try-catch вокруг sendNotification, в отличие от updateStatus.
+
+    @Transactional
     @Override
     public OrderResponseDto deleteOrder(Long id, @Nullable CancelOrderRequestDto requestDto) {
-        Order order = orderDao.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заказ с ID " + id + " не найден"));
+        Order order = getOrderOrThrow(id);
         Payment payment = paymentDao.findByOrderId(id);
-        NotificationSendRequestDto notificationSendRequest = new NotificationSendRequestDto();
 
-        // TODO: несостыковка — cancel через deleteOrder не требует reason, а через updateStatus
-        //  с ORDER_CANCELLED — требует (см. @AssertTrue в UpdateStatusRequestDto).
-        //  Нужно добавить валидацию reason и в CancelOrderRequestDto.
-        if (!order.getStatus().name().equals("ORDER_CREATED") && !order.getStatus().name().equals("ORDER_PAID") ){
+        if (!order.getStatus().name().equals("ORDER_CREATED") && !order.getStatus().name().equals("ORDER_PAID")) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Недопустимый переход статуса из " + order.getStatus()
             );
         }
 
-        if(payment != null && payment.getStatus() == PaymentStatus.SUCCESS){
+        if (payment != null && payment.getStatus() == PaymentStatus.SUCCESS) {
             payment.setStatus(PaymentStatus.REFUNDED);
             paymentDao.save(payment);
         }
 
         order.setStatus(OrderStatus.ORDER_CANCELLED);
         orderDao.save(order);
+        sendNotification(order, "ORDER_CANCELLED", "Отмена заказа №" + order.getId(), "Ваш заказ успешно отменен", requestDto.getReason());
 
-        notificationSendRequest.setOrderId(order.getId());
-        notificationSendRequest.setUserId(order.getUserId());
-        notificationSendRequest.setUserEmail(order.getUserEmail());
-        notificationSendRequest.setEventType("ORDER_CANCELLED");
-        notificationSendRequest.setTotalAmount(order.getTotalAmount());
-        if(requestDto != null){
-            notificationSendRequest.setReason(requestDto.getReason());
-        }
-        notificationFeignClient.sendNotification(notificationSendRequest);
 
         return orderMapper.toDto(order);
     }
