@@ -8,6 +8,7 @@ import org.example.domain.Payment;
 import org.example.dto.*;
 import org.example.enumeration.OrderStatus;
 import org.example.enumeration.PaymentStatus;
+import org.example.kafka.producer.NotificationProducer;
 import org.example.mapper.OrderMapper;
 import org.example.mapper.PaymentMapper;
 import org.example.repository.OrderDao;
@@ -32,6 +33,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentMapper paymentMapper;
     private final OrderDao orderDao;
     private final PaymentDao paymentDao;
+    private final NotificationProducer notificationProducer;
 
     private Payment createPayment(Order order, PaymentRequestDto requestDto) {
         Payment payment = new Payment();
@@ -59,7 +61,7 @@ public class OrderServiceImpl implements OrderService {
         notificationSendRequest.setTotalAmount(savedOrder.getTotalAmount());
         notificationSendRequest.setReason(reason);
         try {
-            notificationFeignClient.sendNotification(notificationSendRequest);
+            notificationProducer.sendNotification(notificationSendRequest);
         } catch (Exception e) {
 
             System.err.println("Ошибка при отправке уведомления: " + e.getMessage());
